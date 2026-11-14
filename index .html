@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Вгадай тваринку — Дитяча гра-вікторина</title>
+  <style>
+    :root {
+      --bg-top: #fff6cc;
+      --bg-bottom: #d9f4ff;
+      --card-bg: #ffffff;
+      --primary: #ff8c00;
+      --primary-dark: #e07600;
+      --accent: #38b6ff;
+      --success: #2ecc71;
+      --error: #ff6b6b;
+      --text-main: #2c3e50;
+      --shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    .game-container {
+      width: 100%;
+      max-width: 680px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border-radius: 32px;
+      padding: 24px 20px 28px;
+      box-shadow: var(--shadow);
+      border: 4px solid #ffffff;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Header & Score */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .game-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+    }
+
+    .score-badge {
+      background: linear-gradient(135deg, #ffe066 0%, #ffbe0b 100%);
+      color: #5c3d00;
+      font-weight: 800;
+      font-size: 1.05rem;
+      padding: 8px 16px;
+      border-radius: 999px;
+      box-shadow: 0 4px 10px rgba(255, 190, 11, 0.35);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.25s ease;
+    }
+
+    .score-badge.bump {
+      transform: scale(1.18);
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 14px;
+      background: #e9ecef;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 22px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff9f1c, #2ec4b6);
+      border-radius: 999px;
+      transition: width 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Question Box */
+    .question-box {
+      background: linear-gradient(135deg, #eef9ff 0%, #f8f9fa 100%);
+      border: 3px dashed #90e0ef;
+      border-radius: 24px;
+      padding: 20px 16px;
+      margin-bottom: 22px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .question-text {
+      font-size: clamp(1.35rem, 4.5vw, 1.85rem);
+      font-weight: 800;
+      color: #1d3557;
+      margin: 0;
+      line-height: 1.3;
+    }
+
+    .speak-btn {
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      border-radius: 999px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 5px 0 #1e96fc;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .speak-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 1px 0 #1e96fc;
+    }
+
+    /* Feedback Banner */
+    .feedback-msg {
+      min-height: 34px;
+      text-align: center;
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 14px;
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .feedback-msg.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .feedback-msg.success {
+      color: #1e9e53;
+    }
+
+    .feedback-msg.error {
+      color: #e63946;
+    }
+
+    /* Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .animal-card {
+      background: var(--card-bg);
+      border: 4px solid #e2e8f0;
+      border-bottom-width: 8px;
+      border-radius: 26px;
+      padding: 20px 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform 0.18s ease, border-color 0.2s ease, background-color 0.2s ease;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+    }
+
+    .animal-card:hover {
+      transform: translateY(-4px);
+      border-color: #ffd166;
+    }
+
+    .animal-card:active {
+      transform: translateY(2px);
+    }
+
+    .animal-card.monkey { background: #fff9ec; border-color: #f4a261; }
+    .animal-card.dog    { background: #f0f9ff; border-color: #4ea8de; }
+    .animal-card.bunny  { background: #fff0f6; border-color: #ff8fab; }
+    .animal-card.cat    { background: #f3f0ff; border-color: #9b5de5; }
+
+    .animal-emoji {
+      font-size: clamp(3.6rem, 12vw, 5rem);
+      line-height: 1;
+      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.12));
+      transition: transform 0.3s ease;
+    }
+
+    .animal-name {
+      font-size: clamp(1.05rem, 3.6vw, 1.35rem);
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      color: #2b2d42;
+      text-transform: uppercase;
+    }
+
+    /* Animations */
+    @keyframes celebrateBounce {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      25% { transform: scale(1.14) rotate(-5deg); }
+      50% { transform: scale(1.18) rotate(5deg); }
+      75% { transform: scale(1.1) rotate(-3deg); }
+    }
+
+    @keyframes gentleShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-10px); }
+      40% { transform: translateX(10px); }
+      60% { transform: translateX(-7px); }
+      80% { transform: translateX(7px); }
+    }
+
+    .animal-card.correct {
+      animation: celebrateBounce 0.75s ease;
+      border-color: var(--success) !important;
+      background: #d8f3dc !important;
+      box-shadow: 0 0 0 6px rgba(46, 204, 113, 0.28);
+    }
+
+    .animal-card.wrong {
+      animation: gentleShake 0.45s ease;
+      border-color: var(--error) !important;
+      background: #ffe5e5 !important;
+    }
+
+    /* End Screen */
+    .end-screen {
+      display: none;
+      text-align: center;
+      padding: 20px 10px;
+    }
+
+    .end-screen.active {
+      display: block;
+      animation: celebrateBounce 0.7s ease;
+    }
+
+    .trophy {
+      font-size: 5.5rem;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+
+    .end-title {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #ff8c00;
+      margin: 0 0 10px;
+    }
+
+    .end-subtitle {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #2c3e50;
+      margin: 0 0 24px;
+    }
+
+    .restart-btn {
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 16px 34px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 0 #1e8449;
+      transition: transform 0.15s ease;
+    }
+
+    .restart-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #1e8449;
+    }
+
+    /* Confetti Canvas */
+    #confettiCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="confettiCanvas"></canvas>
+
+  <main class="game-container">
+    <div id="quizView">
+      <div class="top-bar">
+        <h1 class="game-title">🐾 Вгадай тваринку</h1>
+        <div class="score-badge" id="scoreBadge">
+          <span>Виконано завдань:</span>
+          <span id="scoreCount">0</span> / <span id="totalCount">10</span> ⭐
+        </div>
+      </div>
+
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="question-box">
+        <p class="question-text" id="questionText">Завантаження...</p>
+        <button type="button" class="speak-btn" id="speakBtn" aria-label="Прослухати запитання">
+          🔊 Послухати ще раз
+        </button>
+      </div>
+
+      <div class="feedback-msg" id="feedbackMsg"></div>
+
+      <div class="cards-grid" id="cardsGrid">
+        <button type="button" class="animal-card monkey" data-animal="monkey">
+          <span class="animal-emoji">🐒</span>
+          <span class="animal-name">Мавпочка</span>
+        </button>
+
+        <button type="button" class="animal-card dog" data-animal="dog">
+          <span class="animal-emoji">🐶</span>
+          <span class="animal-name">Собачка</span>
+        </button>
+
+        <button type="button" class="animal-card bunny" data-animal="bunny">
+          <span class="animal-emoji">🐰</span>
+          <span class="animal-name">Зайчик</span>
+        </button>
+
+        <button type="button" class="animal-card cat" data-animal="cat">
+          <span class="animal-emoji">🐱</span>
+          <span class="animal-name">Котик</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="end-screen" id="endScreen">
+      <div class="trophy">🏆🎉</div>
+      <h2 class="end-title">Ура! Перемога!</h2>
+      <p class="end-subtitle" id="endSummary">Ти виконав усі 10 завдань! Ти справжній знавець тваринок!</p>
+      <button type="button" class="restart-btn" id="restartBtn">🔄 Грати ще раз</button>
+    </div>
+  </main>
+
+  <script>
+    const QUESTIONS = [
+      {
+        text: "Хто любить їсти стиглий жовтий банан? 🍌",
+        speech: "Хто любить їсти стиглий жовтий банан?",
+        answer: "monkey"
+      },
+      {
+        text: "Хто живе у дерев'яній будці та охороняє двір? 🏠",
+        speech: "Хто живе у дерев'яній будці та охороняє двір?",
+        answer: "dog"
+      },
+      {
+        text: "Хто дуже любить хрумку морквинку та капусту? 🥕",
+        speech: "Хто дуже любить хрумку морквинку та капусту?",
+        answer: "bunny"
+      },
+      {
+        text: "Хто любить пити тепле молочко та муркотіти? 🥛",
+        speech: "Хто любить пити тепле молочко та муркотіти?",
+        answer: "cat"
+      },
+      {
+        text: "Хто стрибає по ліанах на деревах у джунглях? 🌴",
+        speech: "Хто стрибає по ліанах на деревах у джунглях?",
+        answer: "monkey"
+      },
+      {
+        text: "Хто гризе смачну кісточку та весело гавкає? 🦴",
+        speech: "Хто гризе смачну кісточку та весело гавкає?",
+        answer: "dog"
+      },
+      {
+        text: "Хто живе в лісовій нірці та має довгі вушка? 🌲",
+        speech: "Хто живе в лісовій нірці та має довгі вушка?",
+        answer: "bunny"
+      },
+      {
+        text: "Хто любить гратися з клубочком ниток на килимку? 🧶",
+        speech: "Хто любить гратися з клубочком ниток на килимку?",
+        answer: "cat"
+      },
+      {
+        text: "Хто живе в теплих краях та має довгий хвостик? 🌿",
+        speech: "Хто живе в теплих краях та має довгий хвостик?",
+        answer: "monkey"
+      },
+      {
+        text: "Хто ловить спритних мишок та гріється на сонечку? 🐟",
+        speech: "Хто ловить спритних мишок та гріється на сонечку?",
+        answer: "cat"
+      }
+    ];
+
+    const PRAISES = [
+      "Молодець! Правильно!",
+      "Супер! Так тримати!",
+      "Розумничка! Чудово!",
+      "Браво! Ти вгадав!",
+      "Чудова робота!"
+    ];
+
+    const ENCOURAGEMENTS = [
+      "Спробуй ще раз! Ти зможеш!",
+      "Майже! Подумай ще трішки!",
+      "Не здавайся, обери іншу тваринку!"
+    ];
+
+    let currentIndex = 0;
+    let completedCount = 0;
+    let isLocked = false;
+    let audioCtx = null;
+
+    const quizView = document.getElementById("quizView");
+    const endScreen = document.getElementById("endScreen");
+    const questionText = document.getElementById("questionText");
+    const scoreCount = document.getElementById("scoreCount");
+    const totalCount = document.getElementById("totalCount");
+    const scoreBadge = document.getElementById("scoreBadge");
+    const progressFill = document.getElementById("progressFill");
+    const feedbackMsg = document.getElementById("feedbackMsg");
+    const speakBtn = document.getElementById("speakBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const cards = document.querySelectorAll(".animal-card");
+
+    totalCount.textContent = QUESTIONS.length;
+
+    // Web Audio API sound effects
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (audioCtx && audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+    }
+
+    function playTone(freq, duration, type = "sine", delay = 0) {
+      initAudio();
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+      gain.gain.setValueAtTime(0.18, audioCtx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(audioCtx.currentTime + delay);
+      osc.stop(audioCtx.currentTime + delay + duration);
+    }
+
+    function playSuccessSound() {
+      playTone(523.25, 0.16, "triangle", 0);
+      playTone(659.25, 0.16, "triangle", 0.12);
+      playTone(783.99, 0.28, "triangle", 0.24);
+    }
+
+    function playErrorSound() {
+      playTone(280, 0.18, "sine", 0);
+      playTone(220, 0.25, "sine", 0.14);
+    }
+
+    function playVictoryFanfare() {
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((n, i) => playTone(n, 0.25, "triangle", i * 0.14));
+    }
+
+    // Speech synthesis
+    function speakUkrainian(text) {
+      if (!("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "uk-UA";
+      utterance.rate = 0.92;
+      utterance.pitch = 1.15;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function showFeedback(text, type) {
+      feedbackMsg.textContent = text;
+      feedbackMsg.className = "feedback-msg show " + type;
+    }
+
+    function hideFeedback() {
+      feedbackMsg.className = "feedback-msg";
+    }
+
+    function updateProgress() {
+      scoreCount.textContent = completedCount;
+      const percent = (completedCount / QUESTIONS.length) * 100;
+      progressFill.style.width = percent + "%";
+    }
+
+    function renderQuestion() {
+      isLocked = false;
+      hideFeedback();
+      cards.forEach(c => c.classList.remove("correct", "wrong"));
+      const current = QUESTIONS[currentIndex];
+      questionText.textContent = current.text;
+      speakUkrainian(current.speech);
+    }
+
+    function handleCardClick(card) {
+      if (isLocked) return;
+      initAudio();
+
+      const chosen = card.dataset.animal;
+      const correct = QUESTIONS[currentIndex].answer;
+
+      if (chosen === correct) {
+        isLocked = true;
+        card.classList.add("correct");
+        completedCount++;
+        updateProgress();
+
+        scoreBadge.classList.add("bump");
+        setTimeout(() => scoreBadge.classList.remove("bump"), 300);
+
+        const praise = PRAISES[Math.floor(Math.random() * PRAISES.length)];
+        showFeedback("🌟 " + praise, "success");
+        playSuccessSound();
+        speakUkrainian(praise);
+        launchConfetti(45);
+
+        setTimeout(() => {
+          currentIndex++;
+          if (currentIndex < QUESTIONS.length) {
+            renderQuestion();
+          } else {
+            finishGame();
+          }
+        }, 1650);
+      } else {
+        card.classList.remove("wrong");
+        void card.offsetWidth;
+        card.classList.add("wrong");
+        const hint = ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)];
+        showFeedback("💭 " + hint, "error");
+        playErrorSound();
+        speakUkrainian(hint);
+      }
+    }
+
+    function finishGame() {
+      quizView.style.display = "none";
+      endScreen.classList.add("active");
+      playVictoryFanfare();
+      launchConfetti(120);
+      speakUkrainian("Ура! Перемога! Ти виконав усі завдання! Ти справжній знавець тваринок!");
+    }
+
+    function restartGame() {
+      currentIndex = 0;
+      completedCount = 0;
+      updateProgress();
+      endScreen.classList.remove("active");
+      quizView.style.display = "block";
+      renderQuestion();
+    }
+
+    // Confetti engine
+    const canvas = document.getElementById("confettiCanvas");
+    const ctx = canvas.getContext("2d");
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function launchConfetti(count) {
+      const colors = ["#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93", "#ff9f1c"];
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: -20 - Math.random() * 100,
+          size: 7 + Math.random() * 8,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vx: (Math.random() - 0.5) * 4,
+          vy: 2.5 + Math.random() * 4.5,
+          rot: Math.random() * 360,
+          vRot: (Math.random() - 0.5) * 10
+        });
+      }
+    }
+
+    function animateConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vRot;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rot * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+        ctx.restore();
+      });
+      particles = particles.filter(p => p.y < canvas.height + 30);
+      requestAnimationFrame(animateConfetti);
+    }
+    animateConfetti();
+
+    cards.forEach(card => {
+      card.addEventListener("click", () => handleCardClick(card));
+    });
+
+    speakBtn.addEventListener("click", () => {
+      initAudio();
+      speakUkrainian(QUESTIONS[currentIndex].speech);
+    });
+
+    restartBtn.addEventListener("click", () => {
+      initAudio();
+      restartGame();
+    });
+
+    // Start game
+    renderQuestion();
+  </script>
+</body>
+</html>
